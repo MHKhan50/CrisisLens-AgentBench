@@ -1,4 +1,4 @@
-# Research Protocol — v0.1.0
+# Research Protocol — v0.1
 
 ## Research question
 Can a lightweight, evidence-preserving NLP pipeline organise public humanitarian reporting into civilian-needs categories while retaining provenance and communicating uncertainty?
@@ -16,7 +16,14 @@ One supplied document. The model predicts one category: displacement, food_secur
 - Synthetic smoke data is not suitable for real-world performance claims.
 - Evaluation on training data is resubstitution evaluation only.
 
-## v0.2.0 plan
+## v0.1 analysis plan (fixed before running)
+1. Record the dataset revision and file hashes.
+2. Audit sizes, languages, labels and cross-split overlap of documents, projects and normalised excerpt text.
+3. Baselines on all five tasks: prior and TF-IDF word (1-2) and character (3-5) n-grams with one-vs-rest logistic regression (C = 4, liblinear); no tuning beyond per-label thresholds chosen on validation from 0.05 to 0.95.
+4. Report micro- and macro-F1 on test with 95% intervals from 1,000 bootstrap resamples of documents, and scores per language.
+5. Score test excerpts whose document or text also occurs in training separately, and repeat the baselines on a document-grouped re-split (80/10/10 of documents, seed 0).
+
+## Earlier v0.2.0 plan
 1. Select a dataset with explicit licence and annotation documentation.
 2. Preserve document IDs and group by source/document/event to prevent leakage.
 3. Use held-out train/validation/test partitions.

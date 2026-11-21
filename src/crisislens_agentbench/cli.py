@@ -21,6 +21,18 @@ def build_parser():
     analyse.add_argument("--input", required=True)
     analyse.add_argument("--model", required=True)
     analyse.add_argument("--output", required=True)
+    hs = sub.add_parser("humset-download", help="Download HumSet from the Hugging Face Hub (not redistributed).")
+    hs.add_argument("--data-dir", default="data/humset")
+    au = sub.add_parser("humset-audit", help="Audit HumSet: sizes, languages, labels, duplicates, document leakage.")
+    au.add_argument("--data-dir", default="data/humset")
+    au.add_argument("--reports", default="reports")
+    au.add_argument("--limit", type=int, default=None)
+    bl = sub.add_parser("humset-baselines", help="Prior and TF-IDF baselines on every HumSet task.")
+    bl.add_argument("--data-dir", default="data/humset")
+    bl.add_argument("--reports", default="reports")
+    bl.add_argument("--limit", type=int, default=None)
+    bl.add_argument("--n-boot", type=int, default=1000)
+    bl.add_argument("--tasks", default=",".join(["sectors", "pillars_1d", "pillars_2d", "subpillars_1d", "subpillars_2d"]))
     return parser
 
 def main():
@@ -46,6 +58,38 @@ def main():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
         print("Analysed {} reports. Output: {}".format(len(results), path))
+
+    elif args.command == "humset-download":
+        from .humset import download
+        root = download(args.data_dir)
+        print((root / "manifest.json").read_text())
+    elif args.command == "humset-audit":
+        from .audit import audit, to_markdown
+        from .humset import load
+        rep = audit(load(args.data_dir, args.limit))
+        out = Path(args.reports); out.mkdir(parents=True, exist_ok=True)
+        (out / "audit.json").write_text(json.dumps(rep, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+        (out / "audit.md").write_text(to_markdown(rep), encoding="utf-8")
+        print(to_markdown(rep))
+    elif args.command == "humset-baselines":
+        from .audit import norm_text
+        from .benchmark import grouped_resplit, run_all, summary_markdown
+        from .humset import load
+        df = load(args.data_dir, args.limit)
+        tasks = args.tasks.split(",")
+        out = Path(args.reports); out.mkdir(parents=True, exist_ok=True)
+        # Test rows whose document or normalised text also occurs in training are flagged and also scored apart.
+        norm = df["excerpt"].map(norm_text)
+        train = df["split"] == "train"
+        flagged = df["lead_id"].isin(set(df.loc[train, "lead_id"])) | norm.isin(set(norm[train]))
+        md = ["# HumSet baselines", ""]
+        official = run_all(df, str(out / "runs"), tasks, args.n_boot, exclude_test_rows=flagged, tag="official")
+        md.append(summary_markdown(official, "Official split"))
+        regrouped = grouped_resplit(df, seed=0)
+        grouped = run_all(regrouped, str(out / "runs"), tasks, args.n_boot, tag="grouped")
+        md.append(summary_markdown(grouped, "Document-grouped split (no document in two splits)"))
+        (out / "baselines.md").write_text("\n".join(md), encoding="utf-8")
+        print("\n".join(md))
 
 if __name__ == "__main__":
     main()
