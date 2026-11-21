@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — 2026-11-21
+- v0.1 results of the Kaggle run (`results/kaggle-2026-11-21/`) in the README: official split shares 97% of documents across splits; document-grouped scores 0.02 to 0.09 micro-F1 lower; Spanish hardest.
+- Removed a FracAtlas notebook that Kaggle had synced into this repository.
 - Fix: the HumSet loader now uses the official 2.0.0 files (`train_1_1`, `validation_1_1`, `test_1_1`). The name matcher had picked `test_gender.jsonl`, a HumSet-Bias file with 4,869 English rows and different label names, as the test split; results of that run are discarded. Only the three split files are downloaded.
 - Finished tasks are reused only when they were computed on the same data files.
 

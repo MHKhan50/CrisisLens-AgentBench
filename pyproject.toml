@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crisislens-agentbench"
-version = "0.1.1"
+version = "0.1.2"
 description = "Evidence-preserving humanitarian NLP and agent benchmark"
 readme = "README.md"
 requires-python = ">=3.9"

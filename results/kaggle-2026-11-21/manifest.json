@@ -1,0 +1,24 @@
+{
+  "dataset": "nlp-thedeep/humset",
+  "version": "2.0.0",
+  "revision": "0dcf8311cae5a45dee0ded3fea676a1551c1cd68",
+  "licence": "Apache-2.0 (dataset card)",
+  "citation": "Fekih et al., HumSet, Findings of EMNLP 2022",
+  "files": {
+    "train": {
+      "path": "data/train_1_1.jsonl",
+      "bytes": 138912205,
+      "sha256": "fdc84512977ca2de48af33db27ed54da0f48ca3e06ae4db790aa9e0ded11ca1c"
+    },
+    "validation": {
+      "path": "data/validation_1_1.jsonl",
+      "bytes": 12182884,
+      "sha256": "ddf86df1d2693dc2a5e1b5f9f1d821a08a9f3748b93bf6f14b052e1968324cfd"
+    },
+    "test": {
+      "path": "data/test_1_1.jsonl",
+      "bytes": 13133846,
+      "sha256": "2484b6fa7f730e120203857dde2e63fc3b9c66f915ac9c7ee0990d6feefe619e"
+    }
+  }
+}

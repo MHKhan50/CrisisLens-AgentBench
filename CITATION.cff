@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "CrisisLens-AgentBench: dataset audit and document-grouped baselines for multilingual humanitarian text classification (HumSet)"
+authors:
+  - family-names: Hussain
+    given-names: Muzammal
+    affiliation: "Independent researcher, Glasgow, United Kingdom"
+    orcid: "https://orcid.org/0009-0001-2570-5686"
+version: 0.1.2
+date-released: 2026-11-21
+license: MIT
+repository-code: "https://github.com/MHKhan50/CrisisLens-AgentBench"
+keywords:
+  - humanitarian NLP
+  - multilingual text classification
+  - multi-label classification
+  - HumSet
+  - data leakage
+  - dataset audit
