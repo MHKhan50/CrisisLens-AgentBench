@@ -39,9 +39,14 @@ def choose_thresholds(y: np.ndarray, p: np.ndarray) -> np.ndarray:
 
 
 def scores(y: np.ndarray, pred: np.ndarray) -> Dict[str, float]:
+    """Micro, macro (over labels present in ``y``) and sample-averaged F1; NaN when undefined (no rows or labels)."""
+    nan = float("nan")
+    if y.shape[0] == 0 or y.shape[1] == 0:
+        return {"micro_f1": nan, "macro_f1": nan, "samples_f1": nan}
     present = y.sum(axis=0) > 0
     return {"micro_f1": float(f1_score(y, pred, average="micro", zero_division=0)),
-            "macro_f1": float(f1_score(y[:, present], pred[:, present], average="macro", zero_division=0)),
+            "macro_f1": float(f1_score(y[:, present], pred[:, present], average="macro", zero_division=0))
+            if present.any() else nan,
             "samples_f1": float(f1_score(y, pred, average="samples", zero_division=0))}
 
 
@@ -55,7 +60,7 @@ def grouped_bootstrap(y, pred, groups, n_boot: int = 1000, seed: int = 0) -> Dic
         s = scores(y[pick], pred[pick])
         for k in out:
             out[k].append(s[k])
-    return {k: [float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))] for k, v in out.items()}
+    return {k: [float(np.nanpercentile(v, 2.5)), float(np.nanpercentile(v, 97.5))] for k, v in out.items()}
 
 
 def tfidf_model(seed: int = 0, max_features: int = 200_000, n_jobs: int = -1):
@@ -113,6 +118,15 @@ def run_all(df: pd.DataFrame, out_dir: str, tasks=TASKS, n_boot: int = 1000, see
     out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
     summary = {}
     for task in tasks:
+        done = out / f"{tag}_{task}.json"
+        if done.exists():  # finished in an earlier run (restored from an attached notebook output)
+            r = json.loads(done.read_text())
+            summary[task] = {m: {"micro_f1": r[m]["test"]["micro_f1"], "macro_f1": r[m]["test"]["macro_f1"],
+                                 "micro_ci": r[m]["test_ci"]["micro_f1"], "macro_ci": r[m]["test_ci"]["macro_f1"],
+                                 "by_language_micro": {k: v["micro_f1"] for k, v in r[m]["by_language"].items()}}
+                             for m in ("prior", "tfidf_lr")}
+            print(f"{tag} {task}: reused", flush=True)
+            continue
         r = run_task(df, task, n_boot, seed, model_factory, exclude_test_rows)
         probs = r.pop("_test_probabilities")
         te = df[df["split"] == "test"]

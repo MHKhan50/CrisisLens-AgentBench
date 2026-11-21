@@ -80,3 +80,10 @@ def test_normalise_falls_back_to_document_url():
                           "excerpt": ["x", "y"], "sectors": [["Health"], []]})
     out = normalise(frame, "test")
     assert list(out["lead_id"]) == ["http://a", "http://a"] and out.attrs["document_column"] == "document"
+
+
+def test_scores_undefined_cases_return_nan():
+    import math
+    from crisislens_agentbench.benchmark import scores
+    assert math.isnan(scores(np.zeros((0, 3), int), np.zeros((0, 3), int))["micro_f1"])
+    assert math.isnan(scores(np.zeros((4, 2), int), np.zeros((4, 2), int))["macro_f1"])
