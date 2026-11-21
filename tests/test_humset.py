@@ -73,3 +73,10 @@ def test_tfidf_baseline_learns_toy_labels():
     r = run_task(toy(), "sectors", n_boot=20, model_factory=small)
     assert r["tfidf_lr"]["test"]["micro_f1"] > r["prior"]["test"]["micro_f1"]
     assert set(r["tfidf_lr"]["by_language"]) == {"en", "fr", "es"}
+
+
+def test_normalise_falls_back_to_document_url():
+    frame = pd.DataFrame({"entry_id": [1, 2], "document": ["http://a", "http://a"], "lang": ["es", "es"],
+                          "excerpt": ["x", "y"], "sectors": [["Health"], []]})
+    out = normalise(frame, "test")
+    assert list(out["lead_id"]) == ["http://a", "http://a"] and out.attrs["document_column"] == "document"

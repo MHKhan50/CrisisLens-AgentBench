@@ -29,7 +29,7 @@ def audit(df: pd.DataFrame) -> dict:
     df = df.copy()
     df["norm"] = df["excerpt"].map(norm_text)
     df["n_words"] = df["excerpt"].str.split().str.len()
-    report: dict = {"rows": int(len(df))}
+    report: dict = {"rows": int(len(df)), "document_id_column": df.attrs.get("document_column", "lead_id")}
     report["by_split_language"] = {s: df[df["split"] == s]["lang"].value_counts().to_dict() for s in SPLITS}
     report["documents"] = {s: int(df.loc[df["split"] == s, "lead_id"].nunique()) for s in SPLITS}
     report["projects"] = {s: int(df.loc[df["split"] == s, "project_id"].nunique()) for s in SPLITS}

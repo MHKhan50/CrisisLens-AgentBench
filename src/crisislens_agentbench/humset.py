@@ -106,16 +106,42 @@ def _as_list(value) -> List[str]:
     return [t.strip() for t in text.split(";") if t.strip()]
 
 
+_ALIASES = {
+    "entry_id": ("entry_id", "id"),
+    "lead_id": ("lead_id", "lead", "document_id", "doc_id", "document"),
+    "project_id": ("project_id", "project"),
+    "lang": ("lang", "language"),
+    "excerpt": ("excerpt", "text", "modified_excerpt"),
+}
+
+
+def _column(frame: pd.DataFrame, field: str):
+    for name in _ALIASES[field]:
+        if name in frame.columns:
+            return name
+    return None
+
+
 def normalise(frame: pd.DataFrame, split: str) -> pd.DataFrame:
-    """Keep the columns used here, with label columns as Python lists of strings."""
+    """Keep the columns used here, with label columns as Python lists of strings.
+
+    The document id falls back to the source-document URL when ``lead_id`` is absent, and to the entry id as a
+    last resort (then document-level grouping is not possible and the audit says so).
+    """
+    cols = {f: _column(frame, f) for f in _ALIASES}
+    if cols["excerpt"] is None:
+        raise KeyError(f"no excerpt column in HumSet file; columns: {list(frame.columns)}")
+    entry = frame[cols["entry_id"]].astype(str) if cols["entry_id"] else pd.Series(
+        [f"{split}-{i}" for i in range(len(frame))], index=frame.index)
     out = pd.DataFrame({
-        "entry_id": frame["entry_id"].astype(str),
-        "lead_id": frame["lead_id"].astype(str),
-        "project_id": frame["project_id"].astype(str) if "project_id" in frame else "",
-        "lang": frame["lang"].astype(str).str.lower().str[:2],
-        "excerpt": frame["excerpt"].astype(str),
+        "entry_id": entry,
+        "lead_id": frame[cols["lead_id"]].astype(str) if cols["lead_id"] else entry,
+        "project_id": frame[cols["project_id"]].astype(str) if cols["project_id"] else "",
+        "lang": frame[cols["lang"]].astype(str).str.lower().str[:2] if cols["lang"] else "xx",
+        "excerpt": frame[cols["excerpt"]].astype(str),
         "split": split,
     })
+    out.attrs["document_column"] = cols["lead_id"] or "none (entry id used)"
     for task in TASKS:
         out[task] = frame[task].map(_as_list) if task in frame else [[] for _ in range(len(frame))]
     return out
@@ -123,11 +149,17 @@ def normalise(frame: pd.DataFrame, split: str) -> pd.DataFrame:
 
 def load(root: str, limit: Optional[int] = None) -> pd.DataFrame:
     """All three official splits as one frame with a ``split`` column."""
+    import sys
     files = find_split_files(Path(root))
     parts = []
     for split in SPLITS:
         frame = _read(files[split])
+        print(f"{split}: {files[split].relative_to(root)} rows={len(frame)} columns={list(frame.columns)}",
+              file=sys.stderr, flush=True)
         if limit:
             frame = frame.head(limit)
         parts.append(normalise(frame, split))
-    return pd.concat(parts, ignore_index=True)
+    out = pd.concat(parts, ignore_index=True)
+    out.attrs["document_column"] = parts[0].attrs["document_column"]
+    print(f"document id column: {out.attrs['document_column']}", file=sys.stderr, flush=True)
+    return out
