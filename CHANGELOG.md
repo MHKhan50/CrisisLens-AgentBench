@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- Fix: the HumSet loader now uses the official 2.0.0 files (`train_1_1`, `validation_1_1`, `test_1_1`). The name matcher had picked `test_gender.jsonl`, a HumSet-Bias file with 4,869 English rows and different label names, as the test split; results of that run are discarded. Only the three split files are downloaded.
+- Finished tasks are reused only when they were computed on the same data files.
+
 ## 0.1.1 — 2026-11-21
 - HumSet adapter: download from the Hugging Face Hub with a provenance manifest (revision, file hashes); labels normalised to lists.
 - Dataset audit: sizes, languages, documents, label coverage, duplicates and cross-split overlap of documents, projects and text.

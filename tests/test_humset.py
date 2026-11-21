@@ -87,3 +87,17 @@ def test_scores_undefined_cases_return_nan():
     from crisislens_agentbench.benchmark import scores
     assert math.isnan(scores(np.zeros((0, 3), int), np.zeros((0, 3), int))["micro_f1"])
     assert math.isnan(scores(np.zeros((4, 2), int), np.zeros((4, 2), int))["macro_f1"])
+
+
+def test_find_split_files_uses_official_names_and_ignores_bias_files(tmp_path):
+    d = tmp_path / "data"
+    d.mkdir()
+    for name in ("train_1_1", "validation_1_1", "test_1_1", "train", "validation", "test", "test_gender",
+                 "test_country", "humset_bias_train", "humset_bias_val"):
+        (d / f"{name}.jsonl").write_text("{}\n")
+    files = find_split_files(tmp_path)
+    assert {s: p.name for s, p in files.items()} == {"train": "train_1_1.jsonl", "validation": "validation_1_1.jsonl",
+                                                     "test": "test_1_1.jsonl"}
+    (d / "test_1_1.jsonl").unlink()
+    files = find_split_files(tmp_path)
+    assert "gender" not in files["test"].name and "country" not in files["test"].name

@@ -119,8 +119,9 @@ def run_all(df: pd.DataFrame, out_dir: str, tasks=TASKS, n_boot: int = 1000, see
     summary = {}
     for task in tasks:
         done = out / f"{tag}_{task}.json"
-        if done.exists():  # finished in an earlier run (restored from an attached notebook output)
-            r = json.loads(done.read_text())
+        signature = df.attrs.get("data_signature")
+        r = json.loads(done.read_text()) if done.exists() else None
+        if r is not None and r.get("data_signature") == signature:  # finished earlier on the same data files
             summary[task] = {m: {"micro_f1": r[m]["test"]["micro_f1"], "macro_f1": r[m]["test"]["macro_f1"],
                                  "micro_ci": r[m]["test_ci"]["micro_f1"], "macro_ci": r[m]["test_ci"]["macro_f1"],
                                  "by_language_micro": {k: v["micro_f1"] for k, v in r[m]["by_language"].items()}}
@@ -131,6 +132,7 @@ def run_all(df: pd.DataFrame, out_dir: str, tasks=TASKS, n_boot: int = 1000, see
         probs = r.pop("_test_probabilities")
         te = df[df["split"] == "test"]
         np.savez_compressed(out / f"{tag}_{task}_tfidf_test_probs.npz", probs=probs, entry_id=te["entry_id"].to_numpy())
+        r["data_signature"] = signature
         (out / f"{tag}_{task}.json").write_text(json.dumps(r, indent=2))
         summary[task] = {m: {"micro_f1": r[m]["test"]["micro_f1"], "macro_f1": r[m]["test"]["macro_f1"],
                              "micro_ci": r[m]["test_ci"]["micro_f1"], "macro_ci": r[m]["test_ci"]["macro_f1"],

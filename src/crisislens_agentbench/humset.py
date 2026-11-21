@@ -17,6 +17,14 @@ REPO_ID = "nlp-thedeep/humset"
 TASKS = ["sectors", "pillars_1d", "pillars_2d", "subpillars_1d", "subpillars_2d"]
 SPLITS = ["train", "validation", "test"]
 _SPLIT_ALIASES = {"train": ("train",), "validation": ("validation", "val", "dev"), "test": ("test",)}
+# Official file names per dataset version (the dataset's own loading script, humset.py on the Hub).
+OFFICIAL_FILES = {
+    "2.0.0": {"train": "data/train_1_1.jsonl", "validation": "data/validation_1_1.jsonl", "test": "data/test_1_1.jsonl"},
+    "1.0.0": {"train": "data/train.jsonl", "validation": "data/validation.jsonl", "test": "data/test.jsonl"},
+}
+DEFAULT_VERSION = "2.0.0"
+# Other files in the same folder that are not HumSet splits (HumSet-Bias material).
+_NOT_SPLITS = ("bias", "gender", "country")
 _READERS = {".csv": "csv", ".tsv": "csv", ".jsonl": "json", ".json": "json", ".parquet": "parquet"}
 
 
@@ -54,9 +62,16 @@ def _version_key(path: Path) -> tuple:
     return (0,)
 
 
-def find_split_files(root: Path) -> Dict[str, Path]:
-    """Map train/validation/test to data files under ``root``, preferring the newest version folder."""
-    candidates = [p for p in root.rglob("*") if p.is_file() and _suffix(p) in _READERS]
+def find_split_files(root: Path, version: str = DEFAULT_VERSION) -> Dict[str, Path]:
+    """Map train/validation/test to data files under ``root``.
+
+    The official file names of ``version`` are used when present. Otherwise files are matched by name (newest version
+    folder first), ignoring the HumSet-Bias files (``*bias*``, ``test_gender``, ``test_country``)."""
+    official = {s: root / p for s, p in OFFICIAL_FILES.get(version, {}).items()}
+    if official and all(p.is_file() for p in official.values()):
+        return official
+    candidates = [p for p in root.rglob("*") if p.is_file() and _suffix(p) in _READERS
+                  and not any(w in p.name.lower() for w in _NOT_SPLITS)]
     found: Dict[str, Path] = {}
     for split, aliases in _SPLIT_ALIASES.items():
         matches = [p for p in candidates if any(a in p.name.lower().split(".")[0].replace("-", "_").split("_")
@@ -76,10 +91,10 @@ def download(data_dir: str = "data/humset", revision: str = "main") -> Path:
 
     info = HfApi().dataset_info(REPO_ID, revision=revision)
     root = Path(snapshot_download(REPO_ID, repo_type="dataset", revision=info.sha, local_dir=data_dir,
-                                  allow_patterns=["data/*", "data/**", "README.md"]))
+                                  allow_patterns=[*OFFICIAL_FILES[DEFAULT_VERSION].values(), "README.md"]))
     files = find_split_files(root)
     manifest = {
-        "dataset": REPO_ID, "revision": info.sha, "licence": "Apache-2.0 (dataset card)",
+        "dataset": REPO_ID, "version": DEFAULT_VERSION, "revision": info.sha, "licence": "Apache-2.0 (dataset card)",
         "citation": "Fekih et al., HumSet, Findings of EMNLP 2022",
         "files": {s: {"path": str(p.relative_to(root)), "bytes": p.stat().st_size, "sha256": _sha256(p)}
                   for s, p in files.items()},
@@ -161,5 +176,6 @@ def load(root: str, limit: Optional[int] = None) -> pd.DataFrame:
         parts.append(normalise(frame, split))
     out = pd.concat(parts, ignore_index=True)
     out.attrs["document_column"] = parts[0].attrs["document_column"]
+    out.attrs["data_signature"] = {s: [files[s].name, files[s].stat().st_size, limit] for s in SPLITS}
     print(f"document id column: {out.attrs['document_column']}", file=sys.stderr, flush=True)
     return out
