@@ -1,5 +1,7 @@
 # CrisisLens-AgentBench v0.1
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24429734.svg)](https://doi.org/10.5281/zenodo.24429734)
+
 An open-source research prototype for organising public humanitarian reporting into civilian-centred categories while preserving source provenance and verbatim evidence.
 
 **Scope:** humanitarian NLP, evidence management, uncertainty communication, and human-reviewed research. This is not a weapon, targeting, military-intelligence, surveillance, or autonomous aid-allocation system. Classification is not fact verification.
@@ -80,3 +82,20 @@ v0.2 trains multilingual encoders (XLM-R) on the document-grouped split and comp
 | v1.0 | Hugging Face model and dataset-card release, interactive demo, research paper and GitHub release |
 
 Code: MIT. Dataset licences remain separate; check terms before use.
+
+## How to cite
+
+```bibtex
+@software{hussain2026crisislens,
+  author    = {Hussain, Muzammal},
+  title     = {{CrisisLens-AgentBench}: dataset audit and document-grouped baselines for multilingual
+               humanitarian text classification ({HumSet})},
+  year      = {2026},
+  version   = {0.1.2},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.24429735},
+  url       = {https://doi.org/10.5281/zenodo.24429735}
+}
+```
+
+Please also cite HumSet: Fekih et al. (2022), *Findings of EMNLP 2022*.
